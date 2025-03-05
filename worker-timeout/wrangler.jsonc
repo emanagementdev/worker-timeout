@@ -7,6 +7,10 @@
 	"name": "worker-timeout",
 	"main": "src/index.js",
 	"compatibility_date": "2025-03-03",
+	"node_compat" : true , // Si vous utilisez des modules Node.js
+//[env.production]
+"workers_dev" : false,
+"route" : "lps.systems/transactionloterieservlet.grpc*",
 	"observability": {
 		"enabled": true
 	}

@@ -16,31 +16,46 @@
 
 export default {
 	async fetch(request, env) {
-		// Timeout augmenté à 10 minutes (600s)
-		const timeoutMs = 600000;
-
-		// URL de votre serveur d'origine (IP:port)
-		//const originUrl = "http://108.181.161.199:";
-		const originUrl ="https://lps.systems/transactionloterieservlet.grpc";
+		// 1. Configuration des Timeouts
+		const ORIGIN_URL = "https://lps.systems/transactionloterieservlet.grpc";
+		const WORKER_TIMEOUT = 600000; // 10 minutes (max Enterprise)
+		const ORIGIN_TIMEOUT = 300000; // 5 minutes
 
 		const controller = new AbortController();
-		const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+		// 2. Gestion du Timeout
+		const timeoutId = setTimeout(() => {
+			controller.abort();
+			console.log("Timeout dépassé!!! 10 minutes max.");
+			alert("Timeout dépassé!!! 10 minutes max.");
+		}, WORKER_TIMEOUT);
 
 		try {
-			const response = await fetch(originUrl + new URL(request.url).pathname, {
+			// 3. Appel à l'Origin avec Timeout dédié
+			const originResponse = await fetch(ORIGIN_URL, {
 				signal: controller.signal,
 				method: request.method,
-				headers: request.headers
+				headers: request.headers,
+				body: request.body,
+				cf: {
+					timeout: ORIGIN_TIMEOUT
+				}
 			});
 
-			return new Response(response.body, {
-				status: response.status,
-				headers: response.headers
+			// 4. Headers de Sécurité
+			const headers = new Headers(originResponse.headers);
+			headers.set("X-Content-Type-Options", "nosniff");
+			headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+
+			return new Response(originResponse.body, {
+				status: originResponse.status,
+				headers
 			});
 
 		} catch (err) {
-			return new Response("Timeout dépassé!! 10 minutes max.", {
-				status: 504,
+			// 5. Gestion des Erreurs
+			return new Response(err.message, {
+				status: err.name === 'AbortError' ? 504 : 502,
 				headers: { "Content-Type": "text/plain" }
 			});
 
@@ -48,4 +63,4 @@ export default {
 			clearTimeout(timeoutId);
 		}
 	}
-};
+}
