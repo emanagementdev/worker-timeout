@@ -10,7 +10,8 @@
 	"compatibility_date": "2025-03-03",
 //[env.production]
 "workers_dev" : false,
-"route" : "lps.systems/transactionloterieservlet.grpc*",
+//"route" : "lps.systems/transactionloterieservlet.grpc*",
+"route" : "lps.systems/transactionloterieservlet.grpc/${ENVIRONMENT}*" ,
 	"observability": {
 		"enabled": true
 	}
