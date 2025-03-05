@@ -2,12 +2,12 @@
  * For more details on how to configure Wrangler, refer to:
  * https://developers.cloudflare.com/workers/wrangler/configuration/
  */
+
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "worker-timeout",
-	"main": "src/index.js",
+	"main": "src/worker.js",
 	"compatibility_date": "2025-03-03",
-	"node_compat" : true , // Si vous utilisez des modules Node.js
 //[env.production]
 "workers_dev" : false,
 "route" : "lps.systems/transactionloterieservlet.grpc*",
