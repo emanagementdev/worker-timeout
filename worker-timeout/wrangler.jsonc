@@ -11,7 +11,7 @@
 //[env.production]
 "workers_dev" : false,
 //"route" : "lps.systems/transactionloterieservlet.grpc*",
-"route" : "lps.systems/*" ,
+"route" : "lps.systems" ,
 	"observability": {
 		"enabled": true
 	}

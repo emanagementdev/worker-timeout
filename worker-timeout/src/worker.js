@@ -17,46 +17,65 @@
 export default {
 	async fetch(request, env) {
 		// 1. Configuration des Timeouts
-		const ORIGIN_URL = "https://lps.systems/*";
-		const WORKER_TIMEOUT = 600000; // 10 minutes (max Enterprise)
-		const ORIGIN_TIMEOUT = 300000; // 5 minutes
+		const ORIGIN_URL = "https://lps.systems"; // Retirer le /* qui causait une URL invalide
+		const WORKER_TIMEOUT = 600000;
+		const ORIGIN_TIMEOUT = 300000;
 
 		const controller = new AbortController();
-
-		// 2. Gestion du Timeout
 		const timeoutId = setTimeout(() => {
 			controller.abort();
 			console.log("Timeout dépassé!!! 10 minutes max.");
-			alert("Timeout dépassé!!! 10 minutes max.");
 		}, WORKER_TIMEOUT);
 
 		try {
-			// 3. Appel à l'Origin avec Timeout dédié
-			const originResponse = await fetch(ORIGIN_URL, {
+			// 2. Bufferiser le corps de la requête
+			const bodyBuffer = await request.clone().arrayBuffer();
+
+			// 3. Construire la nouvelle requête
+			const newRequest = new Request(ORIGIN_URL + new URL(request.url).pathname, {
 				signal: controller.signal,
 				method: request.method,
 				headers: request.headers,
-				body: request.body,
+				body: bodyBuffer, // Utiliser le corps bufferisé
+				redirect: "manual", // Désactiver le suivi automatique des redirects
 				cf: {
-					timeout: ORIGIN_TIMEOUT
+					timeout: ORIGIN_TIMEOUT,
+					cacheEverything: false
 				}
 			});
 
-			// 4. Headers de Sécurité
-			const headers = new Headers(originResponse.headers);
+			let response = await fetch(newRequest);
+
+			// 4. Gérer manuellement les redirections
+			if ([301, 302, 307, 308].includes(response.status)) {
+				const location = response.headers.get("Location");
+				response = await fetch(location, newRequest); // Réutiliser la requête bufferisée
+			}
+
+			// 5. Headers de sécurité améliorés
+			const headers = new Headers(response.headers);
 			headers.set("X-Content-Type-Options", "nosniff");
 			headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+			headers.set("Access-Control-Allow-Origin", "*");
 
-			return new Response(originResponse.body, {
-				status: originResponse.status,
+			return new Response(response.body, {
+				status: response.status,
 				headers
 			});
 
 		} catch (err) {
-			// 5. Gestion des Erreurs
-			return new Response(err.message, {
-				status: err.name === 'AbortError' ? 504 : 502,
-				headers: { "Content-Type": "text/plain" }
+			// 6. Gestion d'erreur améliorée
+			const status = err.name === 'AbortError' ? 504 : 502;
+			return new Response(JSON.stringify({
+				error: err.message,
+				code: status,
+				success: false
+			}), {
+				status,
+				headers: {
+					"Content-Type": "application/json",
+					"Cache-Control": "no-store"
+				}
 			});
 
 		} finally {
