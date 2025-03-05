@@ -17,7 +17,7 @@
 export default {
 	async fetch(request, env) {
 		// 1. Configuration des Timeouts
-		const ORIGIN_URL = "https://lps.systems/transactionloterieservlet.grpc";
+		const ORIGIN_URL = "https://lps.systems/*";
 		const WORKER_TIMEOUT = 600000; // 10 minutes (max Enterprise)
 		const ORIGIN_TIMEOUT = 300000; // 5 minutes
 
